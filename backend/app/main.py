@@ -15,22 +15,30 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="ModForge AI Studio API")
 
-# Enable CORS so the frontend can call this API from different localhost ports
-origins = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:3002",
-    "http://localhost:3003",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001",
-    "http://127.0.0.1:3002",
-    "http://127.0.0.1:3003",
-]
+# Enable CORS so the frontend can call this API from different ports/hosts.
+# In production, set CORS_ALLOWED_ORIGINS to a comma-separated list of allowed URLs.
+raw_origins = os.getenv("CORS_ALLOWED_ORIGINS", "")
+if raw_origins:
+    origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+else:
+    origins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://localhost:3003",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:3002",
+        "http://127.0.0.1:3003",
+    ]
+
+# When using wildcard origins, do not enable credentials as it is not allowed by CORS.
+allow_credentials = not (len(origins) == 1 and origins[0] == "*")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )

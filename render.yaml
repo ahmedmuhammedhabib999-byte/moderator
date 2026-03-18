@@ -1,0 +1,35 @@
+# Render deploy configuration for ModForge AI Studio
+#
+# This template defines two services:
+# 1) modforge-backend (FastAPI)
+# 2) modforge-frontend (Next.js)
+#
+# After connecting this repository in Render, you can override env vars (secrets)
+# in the Render dashboard (Settings > Environment).
+
+services:
+  - type: web
+    name: modforge-backend
+    env: python
+    branch: main
+    root: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: OPENAI_API_KEY
+        fromSecret: OPENAI_API_KEY
+      - key: SECRET_KEY
+        fromSecret: SECRET_KEY
+      - key: CORS_ALLOWED_ORIGINS
+        value: "*"
+
+  - type: web
+    name: modforge-frontend
+    env: node
+    branch: main
+    root: .
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NEXT_PUBLIC_API_BASE_URL
+        value: "https://modforge-backend.onrender.com/api/v1"

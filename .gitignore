@@ -64,3 +64,6 @@ ENV/
 # IDE
 .vscode/
 .idea/
+
+# Database files
+*.db
