@@ -1,12 +1,3 @@
-# Render deploy configuration for ModForge AI Studio
-#
-# This template defines two services:
-# 1) modforge-backend (FastAPI)
-# 2) modforge-frontend (Next.js)
-#
-# After connecting this repository in Render, you can override env vars (secrets)
-# in the Render dashboard (Settings > Environment).
-
 services:
   - type: web
     name: modforge-backend
@@ -16,12 +7,22 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: modforge-postgres
+          property: connectionString
       - key: OPENAI_API_KEY
         fromSecret: OPENAI_API_KEY
       - key: SECRET_KEY
         fromSecret: SECRET_KEY
       - key: CORS_ALLOWED_ORIGINS
         value: "*"
+
+  - type: pserv
+    name: modforge-postgres
+    ipAllowList: []
+    plan: starter
+    postgresVersion: "15"
 
   - type: web
     name: modforge-frontend
