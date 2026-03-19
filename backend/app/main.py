@@ -30,9 +30,7 @@ else:
         "http://127.0.0.1:3001",
         "http://127.0.0.1:3002",
         "http://127.0.0.1:3003",
-        # Add your production frontend URLs here
-        "https://YOUR-FRONTEND-URL.vercel.app",  # Replace with your Vercel URL
-        "https://YOUR-FRONTEND-URL.onrender.com",  # Replace with your Render frontend URL
+        "*",  # Allow all origins temporarily for testing, restrict to frontend URL in production
     ]
 
 # When using wildcard origins, do not enable credentials as it is not allowed by CORS.
