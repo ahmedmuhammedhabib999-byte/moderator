@@ -1,4 +1,8 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1"
+// Use production URL if available, otherwise localhost for development
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ??
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? 'https://YOUR-BACKEND-URL.onrender.com/api/v1'  // Replace with your actual backend URL
+    : 'http://localhost:8000/api/v1')
 
 export type LoginResponse = {
   access_token: string
