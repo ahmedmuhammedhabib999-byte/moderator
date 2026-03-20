@@ -1,0 +1,40 @@
+﻿
+> modforge-ai-studio@0.1.0 build
+> next build
+
+  Γû▓ Next.js 15.0.0
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully
+   Linting and checking validity of types ...
+
+./src/app/dashboard/page.tsx
+52:6  Warning: React Hook useEffect has a missing dependency: 'logout'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/7) ...
+   Generating static pages (1/7) 
+   Generating static pages (3/7) 
+   Generating static pages (5/7) 
+ Γ£ô Generating static pages (7/7)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+Γöî Γùï /                                    171 B           108 kB
+Γö£ Γùï /_not-found                          897 B           100 kB
+Γö£ Γùï /dashboard                           2.97 kB         111 kB
+Γö£ Γùï /login                               2.01 kB         101 kB
+Γö£ ╞Æ /projects/[id]                       9.89 kB         109 kB
+Γöö Γùï /register                            2.03 kB         101 kB
++ First Load JS shared by all            99.2 kB
+  Γö£ chunks/215-1a77bd890af4ab29.js       44.6 kB
+  Γö£ chunks/4bd1b696-a41169c4613745a0.js  52.6 kB
+  Γöö other shared chunks (total)          1.91 kB
+
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+

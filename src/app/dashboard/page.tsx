@@ -34,14 +34,22 @@ export default function DashboardPage() {
         const list = await listProjects(token)
         setProjects(list)
       } catch (err) {
-        console.error(err)
+        const message = err instanceof Error ? err.message : String(err)
+        if (message.includes("Could not validate") || message.includes("401")) {
+          // Token is invalid/expired; force logout and redirect to login.
+          logout()
+          router.replace("/login")
+          return
+        }
+        // Avoid triggering Next.js dev overlay via console.error for handled errors.
+        console.warn("Failed to load projects:", message)
       } finally {
         setLoading(false)
       }
     }
 
     fetchProjects()
-  }, [isAuthenticated, router, token])
+  }, [isAuthenticated, router, token, logout])
 
   const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault()

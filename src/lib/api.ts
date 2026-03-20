@@ -1,12 +1,38 @@
-// Use production URL if available, otherwise fallback to the hardcoded Render backend URL for deployed app.
-// In local development, set NEXT_PUBLIC_API_BASE_URL if you want to use localhost specifically.
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  'https://moderator-1-zi2v.onrender.com/api/v1'
+// Determine API_BASE with proper fallback chain:
+// 1. Use NEXT_PUBLIC_API_BASE_URL if explicitly set (deployment override)
+// 2. Use localhost for development (detected by hostname)
+// 3. Fall back to production Render URL
+function getAPIBase(): string {
+  // If explicitly set in environment, use it
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL
+  }
 
-// Logging for diagnostic clarity (remove in production as needed)
-if (typeof window !== 'undefined') {
-  console.log('API_BASE:', API_BASE)
+  // Check if running in browser
+  if (typeof window === 'undefined') {
+    // Server-side, use production
+    return 'https://moderator-1-zi2v.onrender.com/api/v1'
+  }
+
+  // Client-side detection
+  const hostname = window.location.hostname
+  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1'
+
+  if (isLocal) {
+    return 'http://localhost:8000/api/v1'
+  }
+
+  // Production deployment (Render, Vercel, etc.)
+  return 'https://moderator-1-zi2v.onrender.com/api/v1'
+}
+
+const API_BASE = getAPIBase()
+
+// Development logging
+if (typeof window !== 'undefined' && (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost')) {
+  console.log('[API] Base URL:', API_BASE)
+  console.log('[API] Environment:', process.env.NODE_ENV)
+  console.log('[API] Hostname:', window.location.hostname)
 }
 
 export type LoginResponse = {
@@ -53,36 +79,70 @@ function getAuthHeaders(token?: string) {
 
 async function handleResponse<T>(res: Response): Promise<T> {
   const text = await res.text()
+
   if (!res.ok) {
     let msg = text
+    let detail = ''
+
     try {
       const json = JSON.parse(text)
-      msg = json.detail ?? JSON.stringify(json)
-    } catch {
-      // ignore
+      msg = json.detail ?? json.message ?? JSON.stringify(json)
+    } catch (e) {
+      // If response is HTML (404 page), it's likely a routing error
+      if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+        detail = `Backend error: ${res.status} ${res.statusText}. Possible cause: incorrect API URL or backend not running.`
+      }
     }
-    throw new Error(msg || res.statusText)
+
+    const errorMessage = detail || msg || res.statusText || 'Unknown error'
+    console.error('[API] Error:', { status: res.status, message: errorMessage, url: res.url })
+    throw new Error(errorMessage)
   }
+
   if (!text) return {} as T
-  return JSON.parse(text) as T
+
+  try {
+    return JSON.parse(text) as T
+  } catch (e) {
+    console.error('[API] Failed to parse response:', text)
+    throw new Error('Invalid response format from server')
+  }
 }
 
 export async function register(email: string, password: string) {
-  const res = await fetch(`${API_BASE}/register`, {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ email, password }),
-  })
-  return handleResponse<any>(res)
+  try {
+    const url = `${API_BASE}/register`
+    console.log('[AUTH] Registering at:', url)
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ email, password }),
+    })
+
+    return handleResponse<any>(res)
+  } catch (error) {
+    console.error('[AUTH] Registration error:', error)
+    throw error
+  }
 }
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
-  const res = await fetch(`${API_BASE}/login`, {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ email, password }),
-  })
-  return handleResponse<LoginResponse>(res)
+  try {
+    const url = `${API_BASE}/login`
+    console.log('[AUTH] Logging in at:', url)
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ email, password }),
+    })
+
+    return handleResponse<LoginResponse>(res)
+  } catch (error) {
+    console.error('[AUTH] Login error:', error)
+    throw error
+  }
 }
 
 export async function listProjects(token: string): Promise<Project[]> {
