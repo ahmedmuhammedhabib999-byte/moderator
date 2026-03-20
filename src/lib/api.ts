@@ -1,20 +1,18 @@
-// Determine API_BASE with proper fallback chain:
-// 1. Use NEXT_PUBLIC_API_BASE_URL if explicitly set (deployment override)
-// 2. Use localhost for development (detected by hostname)
-// 3. Fall back to production Render URL
+// API Configuration with comprehensive error handling and health checks
+// This ensures correct backend routing for both local and production deployments
+
 function getAPIBase(): string {
-  // If explicitly set in environment, use it
+  // 1. Explicit environment override (highest priority)
   if (process.env.NEXT_PUBLIC_API_BASE_URL) {
     return process.env.NEXT_PUBLIC_API_BASE_URL
   }
 
-  // Check if running in browser
+  // 2. Server-side rendering detection
   if (typeof window === 'undefined') {
-    // Server-side, use production
     return 'https://moderator-1-zi2v.onrender.com/api/v1'
   }
 
-  // Client-side detection
+  // 3. Client-side detection
   const hostname = window.location.hostname
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1'
 
@@ -22,13 +20,13 @@ function getAPIBase(): string {
     return 'http://localhost:8000/api/v1'
   }
 
-  // Production deployment (Render, Vercel, etc.)
+  // 4. Production fallback (Render backend)
   return 'https://moderator-1-zi2v.onrender.com/api/v1'
 }
 
 const API_BASE = getAPIBase()
 
-// Development logging
+// Development logging for debugging
 if (typeof window !== 'undefined' && (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost')) {
   console.log('[API] Base URL:', API_BASE)
   console.log('[API] Environment:', process.env.NODE_ENV)
@@ -77,6 +75,38 @@ function getAuthHeaders(token?: string) {
   return headers
 }
 
+// Health check - verify backend is responsive
+export async function checkBackendHealth(): Promise<boolean> {
+  try {
+    const healthUrl = `${API_BASE.replace('/api/v1', '')}/`
+    console.log('[HEALTH] Checking backend at:', healthUrl)
+    
+    const res = await fetch(healthUrl, { 
+      method: 'GET',
+      signal: AbortSignal.timeout(5000) 
+    })
+    
+    if (!res.ok) {
+      console.warn('[HEALTH] Backend health check failed:', res.status, res.statusText)
+      return false
+    }
+    
+    // Check if response is JSON (backend) or HTML (frontend)
+    const contentType = res.headers.get('content-type')
+    if (contentType?.includes('text/html')) {
+      console.error('[HEALTH] Backend returned HTML instead of JSON. Wrong URL or frontend deployed instead of backend.')
+      return false
+    }
+    
+    const data = await res.json()
+    console.log('[HEALTH] Backend is healthy:', data)
+    return true
+  } catch (error) {
+    console.error('[HEALTH] Backend unreachable:', error)
+    return false
+  }
+}
+
 async function handleResponse<T>(res: Response): Promise<T> {
   const text = await res.text()
 
@@ -88,14 +118,22 @@ async function handleResponse<T>(res: Response): Promise<T> {
       const json = JSON.parse(text)
       msg = json.detail ?? json.message ?? JSON.stringify(json)
     } catch (e) {
-      // If response is HTML (404 page), it's likely a routing error
+      // If response is HTML, it's likely a routing error (wrong backend URL)
       if (text.includes('<!DOCTYPE') || text.includes('<html')) {
-        detail = `Backend error: ${res.status} ${res.statusText}. Possible cause: incorrect API URL or backend not running.`
+        detail = `Backend returned HTML (404 page) instead of JSON. Possible causes:
+1. Wrong API URL: ${API_BASE}
+2. Backend not running on Render/deployment
+3. Frontend deployed instead of backend
+
+Check:
+- NEXT_PUBLIC_API_BASE_URL environment variable
+- Backend is deployed separately on Render
+- Backend is actually running (check Render logs)`
       }
     }
 
     const errorMessage = detail || msg || res.statusText || 'Unknown error'
-    console.error('[API] Error:', { status: res.status, message: errorMessage, url: res.url })
+    console.error('[API] Error:', { status: res.status, message: errorMessage, url: res.url, body: text.substring(0, 200) })
     throw new Error(errorMessage)
   }
 
@@ -177,6 +215,14 @@ export async function updateProject(token: string, projectId: number, payload: P
     body: JSON.stringify(payload),
   })
   return handleResponse<Project>(res)
+}
+
+export async function deleteProject(token: string, projectId: number) {
+  const res = await fetch(`${API_BASE}/projects/${projectId}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(token),
+  })
+  return handleResponse<{ detail: string }>(res)
 }
 
 export async function getProjectData(token: string, projectId: number) {
