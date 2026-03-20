@@ -1,8 +1,13 @@
-// Use production URL if available, otherwise localhost for development
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ??
-  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    ? 'https://moderator-1-zi2v.onrender.com/api/v1'
-    : 'http://localhost:8000/api/v1')
+// Use production URL if available, otherwise fallback to the hardcoded Render backend URL for deployed app.
+// In local development, set NEXT_PUBLIC_API_BASE_URL if you want to use localhost specifically.
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  'https://moderator-1-zi2v.onrender.com/api/v1'
+
+// Logging for diagnostic clarity (remove in production as needed)
+if (typeof window !== 'undefined') {
+  console.log('API_BASE:', API_BASE)
+}
 
 export type LoginResponse = {
   access_token: string

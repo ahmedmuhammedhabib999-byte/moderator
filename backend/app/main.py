@@ -30,7 +30,9 @@ else:
         "http://127.0.0.1:3001",
         "http://127.0.0.1:3002",
         "http://127.0.0.1:3003",
-        "*",  # Allow all origins temporarily for testing, restrict to frontend URL in production
+        "https://moderator-1-zi2v.onrender.com",
+        "https://your-frontend-name.vercel.app",  # replace with your real frontend URL
+        "https://your-frontend-name.onrender.com", # optional alternate
     ]
 
 # When using wildcard origins, do not enable credentials as it is not allowed by CORS.
